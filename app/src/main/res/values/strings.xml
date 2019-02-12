@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">AccountPageLikeTwitter</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+
+    <string name="login">Login</string>
+    <string name="reset_password">Reset password</string>
 </resources>
