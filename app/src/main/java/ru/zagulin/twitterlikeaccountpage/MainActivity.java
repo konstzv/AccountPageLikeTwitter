@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity implements IAuthCallback {
 
     @Override
     public void onUserLogIn() {
-        getSupportFragmentManager().beginTransaction().replace(R.id.activity_main_container, new Fragment()).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.activity_main_container, new ProfileFragment()).commit();
     }
 
     @Override
@@ -31,9 +31,9 @@ public class MainActivity extends AppCompatActivity implements IAuthCallback {
 
 
         if (FirebaseAuth.getInstance().getCurrentUser()!=null){
-            onUserLogOut();
-        }else{
             onUserLogIn();
+        }else{
+            onUserLogOut();
         }
         setContentView(R.layout.activity_main);
 

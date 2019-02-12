@@ -11,4 +11,5 @@
     <string name="email_is_empty">Email is empty</string>
     <string name="email_is_incorrect">Email is incorrect</string>
     <string name="the_password_is_too_short">The password is too short(less than 6 letters)</string>
+    <string name="select_profile_picture">Select profile picture</string>
 </resources>
