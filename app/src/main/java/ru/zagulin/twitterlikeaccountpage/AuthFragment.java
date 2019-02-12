@@ -6,6 +6,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -49,6 +50,13 @@ public class AuthFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         findViews(view);
         setListeners();
+    }
+
+    private void callActivityToShowAccountScreen(){
+        Activity activity = getActivity();
+        if (activity instanceof IAuthCallback){
+            ((IAuthCallback) activity).onUserLogIn();
+        }
     }
 
     private void setListeners() {
@@ -115,6 +123,7 @@ public class AuthFragment extends Fragment {
                     public void onComplete(@NonNull final Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             Log.d(TAG, "Login success");
+                            callActivityToShowAccountScreen();
                         } else {
                             Log.d(TAG, "Login failure");
                         }
@@ -144,6 +153,7 @@ public class AuthFragment extends Fragment {
                     public void onComplete(@NonNull final Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             Log.d(TAG, "Register success");
+                            callActivityToShowAccountScreen();
                         } else {
                             Log.d(TAG, "Register failure");
                         }
