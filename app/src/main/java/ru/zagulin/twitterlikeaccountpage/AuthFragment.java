@@ -62,6 +62,9 @@ public class AuthFragment extends Fragment {
         }
     }
 
+    /**
+     * Setting listeners to views
+     */
     private void setListeners() {
         mLoginBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -99,6 +102,10 @@ public class AuthFragment extends Fragment {
         });
     }
 
+
+    /**
+     * Reset password via Firebase Auth
+     */
     private void resetPassword(@NonNull String email) {
 
         if (!checkIfEmailCorrectElseShowError(email)) {
@@ -120,6 +127,9 @@ public class AuthFragment extends Fragment {
 
     }
 
+    /**
+     * Login by email - password via Firebase Auth
+     */
     private void login(@NonNull String email, @NonNull String password) {
 
         if (!checkIfEmailCorrectElseShowError(email)) {
@@ -147,7 +157,9 @@ public class AuthFragment extends Fragment {
                 });
     }
 
-
+    /**
+     * Register new user by email - password via Firebase Auth
+     */
     private void register(@NonNull String email, @NonNull String password) {
         if (!checkIfEmailCorrectElseShowError(email)) {
             return;
@@ -179,6 +191,13 @@ public class AuthFragment extends Fragment {
 
     }
 
+
+    /**
+     * Check if email is correct and not empty
+     * Show specific errors for each case
+     * TODO:reverse method
+     */
+
     private boolean checkIfEmailCorrectElseShowError(@NonNull final String email) {
         if (TextUtils.isEmpty(email)) {
             showMsg(getString(R.string.email_is_empty));
@@ -192,7 +211,9 @@ public class AuthFragment extends Fragment {
         return true;
     }
 
-
+    /**
+     * Find views by id and set them to the fields
+     */
     private void findViews() {
         View view = getView();
         if (view==null){
@@ -217,6 +238,11 @@ public class AuthFragment extends Fragment {
     }
 
 
+    /**
+     * Check if internet network is available
+     * Show error if not available
+     * TODO:reverse method
+     */
     private boolean checkIsOnlineElseShowError() {
         boolean result = isOnline();
         if (!result) {
@@ -224,7 +250,10 @@ public class AuthFragment extends Fragment {
         }
         return result;
     }
-
+    /**
+     * Check if internet network is available
+     * Show specific errors for each case
+     */
     private boolean isOnline() {
         ConnectivityManager cm =
                 (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);

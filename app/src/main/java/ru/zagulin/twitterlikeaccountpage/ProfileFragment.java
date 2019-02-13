@@ -21,7 +21,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -107,6 +106,9 @@ public class ProfileFragment extends Fragment {
 
     }
 
+    /**
+     * Call activity logout callback
+     */
     private void logout() {
         Activity activity = getActivity();
         if (activity instanceof IAuthCallback) {
@@ -114,7 +116,9 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-
+    /**
+     * Find views by id and set them to the fields
+     */
     private void findViews() {
         View view = getView();
         if (view==null){
@@ -131,6 +135,10 @@ public class ProfileFragment extends Fragment {
         mLogOutBtn = view.findViewById(R.id.fragment_profile_button_logout);
     }
 
+
+    /**
+     * Setting listeners to views
+     */
     private void setListeners() {
         mLogOutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -158,6 +166,11 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    /**
+     * Depends on appbar offset change  images size,
+     * position of email label (in toolbar title or under profile image)
+     * @param verticalOffset - appbar offset
+     */
     private void actionOnOffsetChange(final int verticalOffset) {
         mAppbar.post(new Runnable() {
             @Override
@@ -179,6 +192,10 @@ public class ProfileFragment extends Fragment {
 
     }
 
+    /**
+     * Show  activity for result to choose image for profile image
+     * Chosen image ll be received in {@link #onActivityResult(int, int, Intent)}
+     */
     private void startImageChooser() {
         Intent intent = new Intent();
         intent.setType("image/*");
@@ -188,8 +205,10 @@ public class ProfileFragment extends Fragment {
                 IMG_REQ_CODE);
     }
 
+    /**
+     * Setup tab layout - setting viewpager and adapter
+     */
     private void setupTabs() {
-
         mViewPager.setAdapter(
                 new PageAdapter(getChildFragmentManager()));
         mTabLayout.setupWithViewPager(mViewPager);
@@ -208,13 +227,21 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    /**
+     * Get image from uri and upload it to Firebase Storage
+     * File name is unique user uid
+     * Previous image uri is removed from cache to let {@link #loadAndDisplayProfileImage()}
+     * download new image
+     * TODO: We do not use user image uri because he can delete it - it is better to use copy
+     *  @param filePath - uri to user image
+     */
     private void uploadUserProfileImage(final Uri filePath) {
         StorageReference profileRef = mFirebaseStorage.getReference(mUserImageLocationInStorage);
         profileRef.putFile(filePath).addOnSuccessListener(
                 new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
-                        Log.d(TAG, "Loading succesed");
+                        Log.d(TAG, "Loading succeed");
                         mSimpleImageCache.removeFromCache(mUserUid);
                         loadAndDisplayProfileImage();
                     }
@@ -226,6 +253,9 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    /**
+     * Load image from cache or Firebase Storage and set it to {@link #mImageView}
+     */
     private void loadAndDisplayProfileImage() {
         Bitmap imageFromCache = mSimpleImageCache.getBitmapFromCache(mUserUid);
         if (imageFromCache != null) {
