@@ -15,16 +15,15 @@ import com.google.firebase.storage.UploadTask;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
-import static android.app.Activity.RESULT_OK;
+
 
 public class ProfileFragment extends Fragment {
 
@@ -66,6 +65,12 @@ public class ProfileFragment extends Fragment {
 
     private TabLayout mTabLayout;
 
+    private View mLogOutBtn;
+
+    private String mUserUid;
+
+    private SimpleImageCache mSimpleImageCache;
+
 
     @Nullable
     @Override
@@ -81,10 +86,7 @@ public class ProfileFragment extends Fragment {
         final FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
 
         if (currentUser == null) {
-            Activity activity = getActivity();
-            if (activity instanceof IAuthCallback) {
-                ((IAuthCallback) activity).onUserLogOut();
-            }
+            logout();
             return;
         }
 
@@ -93,15 +95,25 @@ public class ProfileFragment extends Fragment {
 
         setupTabs();
 
-        mUserImageLocationInStorage = String.format("images/profiles/%s.jpg", currentUser.getUid());
+        mUserUid = currentUser.getUid();
+        mUserImageLocationInStorage = String.format("images/profiles/%s.jpg", mUserUid);
+
+        mSimpleImageCache = new SimpleImageCache(getActivity());
+
+        mUserEmail = currentUser.getEmail();
+        mEmailTextView.setText(mUserEmail);
 
         loadAndDisplayProfileImage();
 
-        mUserEmail = currentUser.getEmail();
-
-        mEmailTextView.setText(mUserEmail);
-
     }
+
+    private void logout() {
+        Activity activity = getActivity();
+        if (activity instanceof IAuthCallback) {
+            ((IAuthCallback) activity).onUserLogOut();
+        }
+    }
+
 
     private void findViews(@NonNull final View view) {
         mImageView = view.findViewById(R.id.fragment_profile_image_view_profile);
@@ -111,9 +123,18 @@ public class ProfileFragment extends Fragment {
         mAppbar = view.findViewById(R.id.fragment_profile_appbar);
         mViewPager = view.findViewById(R.id.fragment_profile_view_pager);
         mTabLayout = view.findViewById(R.id.fragment_profile_tab_layout);
+        mLogOutBtn = view.findViewById(R.id.fragment_profile_button_logout);
     }
 
     private void setListeners() {
+        mLogOutBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View view) {
+                mFirebaseAuth.signOut();
+                logout();
+            }
+        });
+
         mImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
@@ -133,16 +154,24 @@ public class ProfileFragment extends Fragment {
     }
 
     private void actionOnOffsetChange(final int verticalOffset) {
-        boolean isContentHide = mCollapsingToolbar.getScrimVisibleHeightTrigger() + Math.abs(verticalOffset) > mCollapsingToolbar
-                .getHeight();
-        if (isContentHide){
-            mMTitleTextView.setText(mUserEmail);
-        }else{
-            mMTitleTextView.setText("");
-        }
-        float scaleFactor = 1F - verticalOffset * .005F ;
-        mImageView.setScaleX(1/scaleFactor);
-        mImageView.setScaleY(1/scaleFactor);
+        mAppbar.post(new Runnable() {
+            @Override
+            public void run() {
+                boolean isContentHide =
+                        mCollapsingToolbar.getScrimVisibleHeightTrigger() + Math.abs(verticalOffset)
+                                > mCollapsingToolbar
+                                .getHeight();
+                if (isContentHide) {
+                    mMTitleTextView.setText(mUserEmail);
+                } else {
+                    mMTitleTextView.setText("");
+                }
+                float scaleFactor = 1F - verticalOffset * .005F;
+                mImageView.setScaleX(1 / scaleFactor);
+                mImageView.setScaleY(1 / scaleFactor);
+            }
+        });
+
     }
 
     private void startImageChooser() {
@@ -166,7 +195,7 @@ public class ProfileFragment extends Fragment {
             @Nullable final Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == IMG_REQ_CODE && resultCode == RESULT_OK
+        if (requestCode == IMG_REQ_CODE && resultCode == Activity.RESULT_OK
                 && data != null && data.getData() != null) {
             Uri filePath = data.getData();
 
@@ -181,6 +210,7 @@ public class ProfileFragment extends Fragment {
                     @Override
                     public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
                         Log.d(TAG, "Loading succesed");
+                        mSimpleImageCache.removeFromCache(mUserUid);
                         loadAndDisplayProfileImage();
                     }
                 }).addOnFailureListener(new OnFailureListener() {
@@ -192,6 +222,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadAndDisplayProfileImage() {
+        Bitmap imageFromCache = mSimpleImageCache.getBitmapFromCache(mUserUid);
+        if (imageFromCache != null) {
+            mImageView.setImageBitmap(imageFromCache);
+            return;
+        }
+
         if (mUserImageLocationInStorage == null) {
             return;
         }
@@ -204,14 +240,15 @@ public class ProfileFragment extends Fragment {
                         public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
 
                             mProfileImageLocalFilePath = localFile.getAbsolutePath();
-                            Bitmap imageBitmap = BitmapFactory
-                                    .decodeFile(mProfileImageLocalFilePath);
-                            mImageView.setImageBitmap(imageBitmap);
+                            mSimpleImageCache.saveToCache(mUserUid, mProfileImageLocalFilePath);
+
+                            mImageView
+                                    .setImageBitmap(mSimpleImageCache.getBitmapFromCache(mUserUid));
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(getActivity(), e.getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e(TAG, e.getLocalizedMessage());
                 }
             });
         } catch (IOException e) {

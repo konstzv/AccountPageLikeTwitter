@@ -7,6 +7,9 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -25,7 +28,7 @@ public class AuthFragment extends Fragment {
 
     private static final String TAG = "AuthFragment";
 
-    private FirebaseAuth auth = FirebaseAuth.getInstance();
+    private FirebaseAuth mFirebaseAuth = FirebaseAuth.getInstance();
 
     private Button mLoginBtn;
 
@@ -52,9 +55,9 @@ public class AuthFragment extends Fragment {
         setListeners();
     }
 
-    private void callActivityToShowAccountScreen(){
+    private void callActivityToShowAccountScreen() {
         Activity activity = getActivity();
-        if (activity instanceof IAuthCallback){
+        if (activity instanceof IAuthCallback) {
             ((IAuthCallback) activity).onUserLogIn();
         }
     }
@@ -63,6 +66,9 @@ public class AuthFragment extends Fragment {
         mLoginBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+                if (!checkIsOnlineElseShowError()) {
+                    return;
+                }
                 String password = mPasswordTextView.getText().toString().trim();
                 String email = mEmailTextView.getText().toString().trim();
                 login(email, password);
@@ -72,6 +78,9 @@ public class AuthFragment extends Fragment {
         mRegisterBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+                if (!checkIsOnlineElseShowError()) {
+                    return;
+                }
                 String password = mPasswordTextView.getText().toString().trim();
                 String email = mEmailTextView.getText().toString().trim();
                 register(email, password);
@@ -81,6 +90,9 @@ public class AuthFragment extends Fragment {
         mResetPswrdBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+                if (!checkIsOnlineElseShowError()) {
+                    return;
+                }
                 String email = mEmailTextView.getText().toString().trim();
                 resetPassword(email);
             }
@@ -89,20 +101,22 @@ public class AuthFragment extends Fragment {
 
     private void resetPassword(@NonNull String email) {
 
-        if (checkIfEmailCorrectElseShowError(email)) {
+        if (!checkIfEmailCorrectElseShowError(email)) {
             return;
         }
 
-        auth.sendPasswordResetEmail(email).addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull final Task<Void> task) {
-                if (task.isSuccessful()) {
-                    Log.d(TAG, "Password reset success");
-                } else {
-                    Log.d(TAG, "Password reset failure");
-                }
-            }
-        });
+        mFirebaseAuth.sendPasswordResetEmail(email)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull final Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "Password reset success");
+                        } else {
+                            showMsg("Password reset failure");
+                            Log.d(TAG, "Password reset failure");
+                        }
+                    }
+                });
 
     }
 
@@ -117,14 +131,16 @@ public class AuthFragment extends Fragment {
             return;
         }
 
-        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener(
+        mFirebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(
                 new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull final Task<AuthResult> task) {
                         if (task.isSuccessful()) {
+
                             Log.d(TAG, "Login success");
                             callActivityToShowAccountScreen();
                         } else {
+                            showMsg("Login failure");
                             Log.d(TAG, "Login failure");
                         }
                     }
@@ -133,7 +149,7 @@ public class AuthFragment extends Fragment {
 
 
     private void register(@NonNull String email, @NonNull String password) {
-        if (checkIfEmailCorrectElseShowError(email)) {
+        if (!checkIfEmailCorrectElseShowError(email)) {
             return;
         }
 
@@ -147,7 +163,7 @@ public class AuthFragment extends Fragment {
             return;
         }
 
-        auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(
+        mFirebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(
                 new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull final Task<AuthResult> task) {
@@ -155,6 +171,7 @@ public class AuthFragment extends Fragment {
                             Log.d(TAG, "Register success");
                             callActivityToShowAccountScreen();
                         } else {
+                            showMsg("Register failure");
                             Log.d(TAG, "Register failure");
                         }
                     }
@@ -192,5 +209,22 @@ public class AuthFragment extends Fragment {
         }
         Snackbar.make(getActivity().findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG)
                 .show();
+    }
+
+
+    private boolean checkIsOnlineElseShowError() {
+        boolean result = isOnline();
+        if (!result) {
+            showMsg(getString(R.string.no_internet_connection));
+        }
+        return result;
+    }
+
+    private boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }
