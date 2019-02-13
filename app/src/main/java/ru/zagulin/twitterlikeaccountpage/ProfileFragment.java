@@ -90,7 +90,7 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        findViews(view);
+        findViews();
         setListeners();
 
         setupTabs();
@@ -115,9 +115,14 @@ public class ProfileFragment extends Fragment {
     }
 
 
-    private void findViews(@NonNull final View view) {
+    private void findViews() {
+        View view = getView();
+        if (view==null){
+            Log.e(TAG,"View used to find views is null");
+            return;
+        }
         mImageView = view.findViewById(R.id.fragment_profile_image_view_profile);
-        mEmailTextView = view.findViewById(R.id.fragment_profile_text_view_email);
+        mEmailTextView =view.findViewById(R.id.fragment_profile_text_view_email);
         mMTitleTextView = view.findViewById(R.id.fragment_profile_text_view_title);
         mCollapsingToolbar = view.findViewById(R.id.fragment_profile_toolbar_layout);
         mAppbar = view.findViewById(R.id.fragment_profile_appbar);

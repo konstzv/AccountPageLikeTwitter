@@ -51,7 +51,7 @@ public class AuthFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull final View view, @Nullable final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        findViews(view);
+        findViews();
         setListeners();
     }
 
@@ -193,7 +193,12 @@ public class AuthFragment extends Fragment {
     }
 
 
-    private void findViews(@NonNull final View view) {
+    private void findViews() {
+        View view = getView();
+        if (view==null){
+            Log.e(TAG,"View used to find views is null");
+            return;
+        }
         mEmailTextView = view.findViewById(R.id.fragment_auth_text_view_email);
         mPasswordTextView = view.findViewById(R.id.fragment_auth_text_view_password);
 
