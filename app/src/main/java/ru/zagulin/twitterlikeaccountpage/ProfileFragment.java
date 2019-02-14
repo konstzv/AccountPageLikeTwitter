@@ -33,10 +33,8 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
 
-
 public class ProfileFragment extends Fragment {
 
-    private static final String TAG = "ProfileFragment";
 
     private FirebaseAuth mFirebaseAuth = FirebaseAuth.getInstance();
 
@@ -69,6 +67,8 @@ public class ProfileFragment extends Fragment {
     private String mUserUid;
 
     private SimpleImageCache mSimpleImageCache;
+
+    private static final String TAG = "ProfileFragment";
 
 
     @Nullable
@@ -121,12 +121,12 @@ public class ProfileFragment extends Fragment {
      */
     private void findViews() {
         View view = getView();
-        if (view==null){
-            Log.e(TAG,"View used to find views is null");
+        if (view == null) {
+            Log.e(TAG, "View used to find views is null");
             return;
         }
         mImageView = view.findViewById(R.id.fragment_profile_image_view_profile);
-        mEmailTextView =view.findViewById(R.id.fragment_profile_text_view_email);
+        mEmailTextView = view.findViewById(R.id.fragment_profile_text_view_email);
         mMTitleTextView = view.findViewById(R.id.fragment_profile_text_view_title);
         mCollapsingToolbar = view.findViewById(R.id.fragment_profile_toolbar_layout);
         mAppbar = view.findViewById(R.id.fragment_profile_appbar);
@@ -140,6 +140,7 @@ public class ProfileFragment extends Fragment {
      * Setting listeners to views
      */
     private void setListeners() {
+
         mLogOutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
@@ -151,6 +152,7 @@ public class ProfileFragment extends Fragment {
         mImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+
                 startImageChooser();
             }
         });
@@ -167,8 +169,9 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Depends on appbar offset change  images size,
-     * position of email label (in toolbar title or under profile image)
+     * Depends on appbar offset change  images size, position of email label (in toolbar title or
+     * under profile image)
+     *
      * @param verticalOffset - appbar offset
      */
     private void actionOnOffsetChange(final int verticalOffset) {
@@ -193,10 +196,11 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Show  activity for result to choose image for profile image
-     * Chosen image ll be received in {@link #onActivityResult(int, int, Intent)}
+     * Show  activity for result to choose image for profile image Chosen image ll be received in
+     * {@link #onActivityResult(int, int, Intent)}
      */
     private void startImageChooser() {
+        Log.d(TAG, "startImageChooser: image chooser called");
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -219,21 +223,28 @@ public class ProfileFragment extends Fragment {
             @Nullable final Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        Log.d(TAG, "onActivityResult:requestCode:" + requestCode);
+        Log.d(TAG, "onActivityResult:resultCode:" + resultCode);
+        Log.d(TAG, "onActivityResult:data is null:" + (data == null));
+        Log.d(TAG, "onActivityResult:data.getData is null:" + (data == null
+                || data.getData() == null));
+
         if (requestCode == IMG_REQ_CODE && resultCode == Activity.RESULT_OK
                 && data != null && data.getData() != null) {
-            Uri filePath = data.getData();
 
-            uploadUserProfileImage(filePath);
+            Uri uri = data.getData();
+            Log.d(TAG, "onActivityResult:uri:" + uri.toString());
+            Log.d(TAG, "onActivityResult:path:" + uri.getPath());
+            uploadUserProfileImage(uri);
         }
     }
 
     /**
-     * Get image from uri and upload it to Firebase Storage
-     * File name is unique user uid
-     * Previous image uri is removed from cache to let {@link #loadAndDisplayProfileImage()}
-     * download new image
-     * TODO: We do not use user image uri because he can delete it - it is better to use copy
-     *  @param filePath - uri to user image
+     * Get image from uri and upload it to Firebase Storage File name is unique user uid Previous
+     * image uri is removed from cache to let {@link #loadAndDisplayProfileImage()} download new
+     * image TODO: We do not use user image uri because he can delete it - it is better to use copy
+     *
+     * @param filePath - uri to user image
      */
     private void uploadUserProfileImage(final Uri filePath) {
         StorageReference profileRef = mFirebaseStorage.getReference(mUserImageLocationInStorage);
@@ -241,14 +252,17 @@ public class ProfileFragment extends Fragment {
                 new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
-                        Log.d(TAG, "Loading succeed");
+                        Log.d(TAG, "uploadUserProfileImage onSuccess");
                         mSimpleImageCache.removeFromCache(mUserUid);
                         loadAndDisplayProfileImage();
                     }
                 }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull final Exception e) {
-                Log.d(TAG, "Loading failed");
+
+                Log.d(TAG, "uploadUserProfileImage onFailure:" + e.getLocalizedMessage());
+                Log.d(TAG, "uploadUserProfileImage onFailure:" + e.getMessage());
+                e.printStackTrace();
             }
         });
     }
@@ -258,12 +272,15 @@ public class ProfileFragment extends Fragment {
      */
     private void loadAndDisplayProfileImage() {
         Bitmap imageFromCache = mSimpleImageCache.getBitmapFromCache(mUserUid);
+
         if (imageFromCache != null) {
+            Log.d(TAG, "loadAndDisplayProfileImage:imageFromCache is null:false");
             mImageView.setImageBitmap(imageFromCache);
             return;
         }
 
         if (mUserImageLocationInStorage == null) {
+            Log.d(TAG, "loadAndDisplayProfileImage:mUserImageLocationInStorage==null:true");
             return;
         }
         StorageReference ref = mFirebaseStorage.getReference().child(mUserImageLocationInStorage);
@@ -273,20 +290,29 @@ public class ProfileFragment extends Fragment {
                     .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-
+                            Log.d(TAG, "loadAndDisplayProfileImage:onSuccess");
                             mProfileImageLocalFilePath = localFile.getAbsolutePath();
+                            Log.d(TAG, "loadAndDisplayProfileImage:onSuccess absolute path:"
+                                    + mProfileImageLocalFilePath);
                             mSimpleImageCache.saveToCache(mUserUid, mProfileImageLocalFilePath);
-
+                            Bitmap bitmapFromCache = mSimpleImageCache.getBitmapFromCache(mUserUid);
+                            Log.d(TAG,
+                                    "loadAndDisplayProfileImage:onSuccess bitmapFromCache == null:"
+                                            + (bitmapFromCache == null));
                             mImageView
-                                    .setImageBitmap(mSimpleImageCache.getBitmapFromCache(mUserUid));
+                                    .setImageBitmap(bitmapFromCache);
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Log.e(TAG, e.getLocalizedMessage());
+                    Log.d(TAG, "loadAndDisplayProfileImage:onFailure" + e.getMessage());
+                    Log.d(TAG, "loadAndDisplayProfileImage:onFailure" + e.getLocalizedMessage());
+                    e.printStackTrace();
                 }
             });
         } catch (IOException e) {
+            Log.d(TAG, "loadAndDisplayProfileImage:catchBlock" + e.getMessage());
+            Log.d(TAG, "loadAndDisplayProfileImage:catchBlock" + e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
